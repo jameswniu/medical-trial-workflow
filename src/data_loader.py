@@ -1,124 +1,147 @@
 """
 data_loader.py
 
-Loads patients (CSV), lab results (CSV), clinical notes (TXT), and trial protocols (YAML).
-Protocols are auto-fixed if criteria lists float without parent keys.
+Loads and synthesizes patient data into unified profiles.
+
+Sources:
+- patients.csv (demographics, DOB, gender, smoker status, height, weight, smoking data)
+- lab_results.csv (time-series lab values)
+
+Features:
+- Precomputes derived fields (age, BMI, pack-years if available)
+- Attaches full lab history AND most recent lab values
+- Handles missing values safely
+
+Usage:
+    python data_loader.py
 """
 
-import pandas as pd
 import os
-import yaml
+import json
+import pandas as pd
+from datetime import datetime
+from typing import Optional, Dict, Any
 
-class DataLoader:
-    def __init__(self, base_path: str):
-        self.base_path = os.path.abspath(base_path)
+CURRENT_DATE = datetime(2024, 5, 1)
 
-    def load_patients(self):
-        path = os.path.join(self.base_path, "patients.csv")
-        if not os.path.exists(path):
-            print("patients.csv not found")
-            return pd.DataFrame()
-        return pd.read_csv(path)
 
-    def load_lab_results(self):
-        path = os.path.join(self.base_path, "lab_results.csv")
-        if not os.path.exists(path):
-            print("lab_results.csv not found")
-            return pd.DataFrame()
-        return pd.read_csv(path)
+def calculate_age(dob: str) -> Optional[int]:
+    """Calculate patient age at CURRENT_DATE."""
+    if pd.isna(dob):
+        return None
+    try:
+        birth_date = datetime.strptime(str(dob), "%Y-%m-%d")
+        return (CURRENT_DATE - birth_date).days // 365
+    except Exception:
+        return None
 
-    def load_clinical_notes(self):
-        notes_dir = os.path.join(self.base_path, "clinical_notes")
-        notes = {}
-        if not os.path.exists(notes_dir):
-            print("clinical_notes folder missing")
-            return notes
-        for f in os.listdir(notes_dir):
-            if f.endswith(".txt"):
-                pid = f.replace(".txt", "")
-                with open(os.path.join(notes_dir, f), "r", encoding="utf-8") as file:
-                    notes[pid] = file.read()
-        return notes
 
-    def _auto_fix_yaml(self, text: str) -> str:
-        """If criteria start with '- description:' and no parent, wrap under 'structured_criteria:'."""
-        lines = text.splitlines(keepends=True)
-        fixed, inserted = [], False
-        for line in lines:
-            if not inserted and line.lstrip().startswith("- description:"):
-                fixed.append("structured_criteria:\n")
-                inserted = True
-            fixed.append(line)
-        return "".join(fixed)
+def calculate_bmi(weight_kg, height_cm) -> Optional[float]:
+    """Compute BMI if height and weight are valid."""
+    if pd.isna(weight_kg) or pd.isna(height_cm) or not height_cm:
+        return None
+    try:
+        return round(weight_kg / ((height_cm / 100) ** 2), 1)
+    except Exception:
+        return None
 
-    def _fallback_protocol(self, filename: str, status: str, note: str) -> dict:
-        """Return a fallback protocol object when YAML cannot be parsed."""
-        base = filename.replace(".yaml", "").replace(".yml", "")
-        return {
-            "protocol_id": base,
-            "study_name": note,
-            "structured_criteria": [],
-            "unstructured_criteria": [],
-            "protocol_status": status,
+
+def calculate_pack_years(cigs_per_day, years_smoked) -> Optional[float]:
+    """Compute pack-years if smoking data is available."""
+    if pd.isna(cigs_per_day) or pd.isna(years_smoked):
+        return None
+    try:
+        return round((cigs_per_day / 20.0) * years_smoked, 1)
+    except Exception:
+        return None
+
+
+def load_patients(patients_csv: str) -> dict:
+    """Load patient demographics and compute derived metrics."""
+    df = pd.read_csv(patients_csv)
+    patients = {}
+
+    for _, row in df.iterrows():
+        pid = row["patient_id"]
+        dob = row.get("date_of_birth")
+
+        patients[pid] = {
+            "patient_id": pid,
+            "date_of_birth": dob,
+            "age": calculate_age(dob),
+            "gender": row.get("gender"),
+            "is_smoker": bool(row.get("is_smoker", False)),
+            "height_cm": row.get("height_cm"),
+            "weight_kg": row.get("weight_kg"),
+            "BMI": calculate_bmi(row.get("weight_kg"), row.get("height_cm")),
+            "cigs_per_day": row.get("cigs_per_day"),
+            "years_smoked": row.get("years_smoked"),
+            "pack_years": calculate_pack_years(row.get("cigs_per_day"), row.get("years_smoked")),
+            "labs": [],
+            "latest_labs": {},  # filled by attach_labs_to_patients
         }
 
-    def load_protocol(self, filepath: str) -> dict:
-        """Load a single YAML protocol with auto-fix and error handling."""
-        filename = os.path.basename(filepath)
-        if not os.path.exists(filepath):
-            return self._fallback_protocol(filename, "missing", "File missing")
+    return patients
+
+
+def load_lab_results(labs_csv: str) -> pd.DataFrame:
+    """Load lab results into a DataFrame."""
+    return pd.read_csv(labs_csv)
+
+
+def attach_labs_to_patients(patients: dict, labs_df: pd.DataFrame):
+    """Attach lab results (history + most recent per test) to patient profiles."""
+    for _, row in labs_df.iterrows():
+        pid = row["patient_id"]
+        if pid not in patients:
+            continue
 
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                raw = f.read()
-            fixed = self._auto_fix_yaml(raw)
-            data = yaml.safe_load(fixed)
+            obs_date = datetime.strptime(str(row["observation_date"]), "%Y-%m-%d")
+        except Exception:
+            obs_date = None
 
-            if not isinstance(data, dict):
-                raise yaml.YAMLError("Parsed YAML not dictionary")
+        lab_entry = {
+            "test_name": row["lab_test_name"],
+            "value": row["value"],
+            "unit": row.get("unit"),
+            "date": obs_date,
+        }
 
-            data.setdefault("structured_criteria", [])
-            data.setdefault("unstructured_criteria", [])
-            data["protocol_status"] = "valid"
-            return data
+        patients[pid]["labs"].append(lab_entry)
 
-        except yaml.YAMLError as e:
-            print(f"YAML error in {filename}: {e}")
-            return self._fallback_protocol(filename, "invalid", "Invalid YAML")
-        except Exception as e:
-            print(f"Error loading {filename}: {e}")
-            return self._fallback_protocol(filename, "error", "Unexpected error")
+        test = row["lab_test_name"]
+        current_latest = patients[pid]["latest_labs"].get(test)
+        if not current_latest or (
+            obs_date and current_latest.get("date") and obs_date > current_latest["date"]
+        ):
+            patients[pid]["latest_labs"][test] = lab_entry
 
-    def load_all_protocols(self):
-        """Load all YAML protocol files in assignment_data folder."""
-        protocols = []
-        for f in os.listdir(self.base_path):
-            if f.endswith(".yaml") or f.endswith(".yml"):
-                filepath = os.path.join(self.base_path, f)
-                proto = self.load_protocol(filepath)
-                protocols.append(proto)
-        return protocols
+
+def build_patient_profiles(patients_csv: str, labs_csv: str) -> dict:
+    """Return unified patient profiles keyed by patient_id."""
+    patients = load_patients(patients_csv)
+    labs_df = load_lab_results(labs_csv)
+    attach_labs_to_patients(patients, labs_df)
+    return patients
 
 
 if __name__ == "__main__":
-    BASE_PATH = os.path.join(os.path.dirname(__file__), "..", "assignment_data")
-    loader = DataLoader(BASE_PATH)
+    BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+    patients_csv = os.path.join(BASE_DIR, "assignment_data", "patients.csv")
+    labs_csv = os.path.join(BASE_DIR, "assignment_data", "lab_results.csv")
 
-    patients = loader.load_patients()
-    print("Patients:", patients.head())
-    # Expected: First 5 rows of patients.csv (patient_id, date_of_birth, gender, etc.)
+    profiles = build_patient_profiles(patients_csv, labs_csv)
+    print("Loaded profiles:", len(profiles))
+    first = list(profiles.values())[0]
+    print("Sample profile:", json.dumps(first, indent=2, default=str))
 
-    labs = loader.load_lab_results()
-    print("Labs:", labs.head())
-    # Expected: First 5 rows of lab_results.csv (patient_id, test_name, value, date)
-
-    notes = loader.load_clinical_notes()
-    print("Notes sample:", {k: v[:40] + "..." for k, v in list(notes.items())[:2]})
-    # Expected: Dictionary with first 2 patient notes truncated
-
-    protocols = loader.load_all_protocols()
-    print("Loaded protocols:")
-    for proto in protocols:
-        print(f"- {proto.get('protocol_id')} ({proto.get('protocol_status')})")
-    # Expected: A list of protocol IDs with status "valid" (auto-fixed) or "invalid"
-
+    # Expected (values vary):
+    # Sample profile: {
+    #   'patient_id': 'patient_C001',
+    #   'age': 54,
+    #   'BMI': 26.1,
+    #   'pack_years': 12.5,
+    #   'labs': [...],
+    #   'latest_labs': {'HbA1c': {...}}
+    # }

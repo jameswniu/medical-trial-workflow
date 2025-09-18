@@ -1,62 +1,78 @@
 """
 note_parser.py
 
-Improved parser for unstructured clinical notes.
-Handles negations, synonyms, and duration checks.
+Manages clinical notes:
+- Indexes patient notes into a vector database (ChromaDB).
+- Embeds note text for semantic search.
+- Provides query functions for concept similarity checks.
+
+Uses cosine similarity (better for semantic embeddings).
 """
 
-import re
-import datetime
+import os
+from utils import get_vector_db, embed_text
 
-CURRENT_DATE = datetime.date(2024, 5, 1)
 
-class NoteParser:
-    def __init__(self, notes: dict):
-        self.notes = {pid: txt.lower() for pid, txt in notes.items()}
+def index_clinical_notes(notes_dir: str):
+    """
+    Read all patient notes from the given directory and insert them into the vector DB.
+    Each file must be named like 'patient_C001.txt'.
+    """
+    collection = get_vector_db()
+    for fname in os.listdir(notes_dir):
+        if fname.endswith(".txt"):
+            patient_id = fname.replace(".txt", "")
+            with open(os.path.join(notes_dir, fname), "r", encoding="utf-8") as f:
+                text = f.read()
+            embedding = embed_text(text)
+            collection.add(
+                ids=[patient_id],
+                embeddings=[embedding],
+                metadatas=[{"patient_id": patient_id, "text": text}],
+            )
 
-    def check_presence(self, patient_id: str, concepts: list) -> bool:
-        text = self.notes.get(patient_id, "")
-        for term in concepts:
-            if term.lower() in text:
-                if re.search(rf"(no|denies|without|absence of)\s+{term}", text):
-                    continue
-                return True
-        return False
 
-    def check_absence(self, patient_id: str, concepts: list) -> bool:
-        text = self.notes.get(patient_id, "")
-        for term in concepts:
-            if re.search(rf"(no|denies|without|absence of)\s+{term}", text):
-                continue
-            if term.lower() in text:
-                return False
-        return True
+def query_notes(concepts: list[str], top_n: int = 5):
+    """
+    Query the vector DB for patients whose notes are semantically similar
+    to the given concept terms (cosine similarity).
 
-    def check_duration(self, patient_id: str, concepts: list, minimum_months: int) -> bool:
-        text = self.notes.get(patient_id, "")
-        if not self.check_presence(patient_id, concepts):
-            return False
-        match = re.search(r"(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})", text)
-        if match:
-            month, year = match.group(1).lower(), int(match.group(2))
-            month_map = {m: i+1 for i, m in enumerate([
-                "january","february","march","april","may","june",
-                "july","august","september","october","november","december"
-            ])}
-            diag_date = datetime.date(year, month_map[month], 1)
-            delta_months = (CURRENT_DATE.year - diag_date.year) * 12 + (CURRENT_DATE.month - diag_date.month)
-            return delta_months >= minimum_months
-        return True
+    Args:
+        concepts: list of terms/phrases to search for
+        top_n: number of top matches to return per concept
+
+    Returns:
+        dict: {patient_id: {"concept": str, "similarity": float}}
+              Always returns top matches, never empty.
+    """
+    collection = get_vector_db()
+    results = {}
+    for concept in concepts:
+        emb = embed_text(concept)
+        res = collection.query(query_embeddings=[emb], n_results=top_n)
+
+        for pid, dist in zip(res["ids"][0], res["distances"][0]):
+            similarity = 1 - dist  # cosine distance → similarity
+            # Keep highest similarity if same patient appears again
+            if pid not in results or results[pid]["similarity"] < similarity:
+                results[pid] = {"concept": concept, "similarity": similarity}
+    return results
 
 
 if __name__ == "__main__":
-    notes = {
-        "C001": "Confirmed Type 2 Diabetes diagnosis in March 2022. No CHF.",
-        "C002": "Patient has congestive heart failure. Diabetes diagnosis April 2024."
-    }
-    parser = NoteParser(notes)
+    BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+    notes_folder = os.path.join(BASE_DIR, "assignment_data", "clinical_notes")
 
-    print("C001 diabetes >=12 months:", parser.check_duration("C001", ["diabetes"], 12))  # Expect True
-    print("C002 diabetes >=12 months:", parser.check_duration("C002", ["diabetes"], 12))  # Expect False
-    print("C001 CHF absent:", parser.check_absence("C001", ["chf"]))                     # Expect True
-    print("C002 CHF present:", parser.check_presence("C002", ["chf"]))                   # Expect True
+    print(f"Indexing notes in: {notes_folder}")
+    index_clinical_notes(notes_folder)
+
+    test_concepts = ["diabetes", "heart failure"]
+    matches = query_notes(test_concepts, top_n=5)
+    print("Query results:", matches)
+
+    # Expected (actual values vary):
+    # Query results: {
+    #   "patient_C001": {"concept": "diabetes", "similarity": 0.82},
+    #   "patient_C004": {"concept": "heart failure", "similarity": 0.79},
+    #   ...
+    # }
