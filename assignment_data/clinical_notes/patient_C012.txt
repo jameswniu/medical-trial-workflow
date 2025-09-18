@@ -1,0 +1,6 @@
+Patient C012, Male, 51 years old. Routine follow-up for T2DM management.
+Diagnosed with Type 2 Diabetes in 2021. Generally good adherence to medications.
+Recent HbA1c (March 2024) shows 7.7%, slightly above target but improving trend.
+Past medical history includes mild hypertension, well controlled on lisinopril.
+No cardiac issues. Denies chest pain, shortness of breath, or exercise intolerance.
+Former smoker, quit 5 years ago. Continues with regular exercise routine and dietary modifications.

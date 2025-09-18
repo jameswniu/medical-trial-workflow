@@ -1,0 +1,14 @@
+Patient C002, Male, 36 years old. History of active smoking for 18 years, 1 pack per day (18 pack-years).
+Height: 5'10" (178 cm), Weight: 220 lbs (100 kg), BMI: 31.5 kg/m². High school dropout, works in construction.
+Diagnosed with T2DM in October 2023 (6 months duration). Currently on Metformin 1000mg BID, but struggling with medication adherence.
+Poor adherence reported - misses doses 3-4 times per week due to work schedule and forgetfulness. No pill organizer used.
+Recent HbA1c (January 2024) was 8.2%. Previous value at diagnosis: 9.1% (Oct 2023).
+Smoking history: Started at age 18, currently 1 pack/day. Previous quit attempts: 2 failed attempts in past 3 years (lasted 2 weeks and 1 month).
+Motivation to quit smoking: 4/10 - acknowledges need but feels overwhelmed with recent diabetes diagnosis.
+Occupational exposure: Construction work with dust and fumes for 15 years. No formal respiratory protection used consistently.
+Family history: Father died of lung cancer at 58, mother has diabetes. No known family cancer screening history documented.
+Social support: Lives alone, limited family support. Girlfriend supportive of quit attempts but also smokes.
+Patient presents with increasing dyspnea on exertion and lower extremity edema. Echocardiogram shows reduced ejection fraction (EF 35%), consistent with Congestive Heart Failure (HFrEF).
+Recent spirometry (Dec 2023): FEV1 65% predicted, consistent with mild airflow limitation.
+Current medications: Metformin 1000mg BID, Lisinopril 5mg daily, Carvedilol 3.125mg BID (3 medications, complexity score: 5).
+Currently awaiting cardiology referral. Strongly advised smoking cessation. Recent stress: job layoff 2 months ago, financial concerns.

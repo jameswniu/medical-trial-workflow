@@ -1,0 +1,6 @@
+Patient C016, Male, 69 years old. Complex diabetes and cardiac management.
+Long-standing Type 2 Diabetes Mellitus since 2010. Multiple complications including neuropathy.
+Recent HbA1c (January 2024) severely elevated at 9.5%. Requires urgent intervention.
+Significant cardiac history with Congestive Heart Failure diagnosed 4 years ago.
+Recent hospitalization for heart failure exacerbation. EF currently 30% on optimal medical therapy.
+Former smoker, quit 15 years ago after cardiac diagnosis. Close cardiology follow-up ongoing.

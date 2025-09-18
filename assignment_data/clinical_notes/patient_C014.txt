@@ -1,0 +1,7 @@
+Patient C014, Male, 60 years old. Comprehensive medical evaluation.
+Patient has T2DM diagnosed 4 years ago. Moderate control with oral medications.
+Recent HbA1c (April 2024) shows 8.0%, indicating need for optimization.
+Current smoker, approximately 1 pack daily for 35 years. Counseled extensively on cessation.
+No cardiac abnormalities detected on examination. No history of heart failure.
+Echocardiogram from 6 months ago shows normal ejection fraction. No CHF symptoms present.
+Provided smoking cessation resources and nicotine replacement therapy options.

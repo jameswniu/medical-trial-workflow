@@ -1,0 +1,6 @@
+Patient C006, Male, 61 years old. Follow-up visit for diabetes management. DOB 1962-03-12.
+Established Type 2 Diabetes diagnosis since 2019. Currently on Metformin and Glipizide.
+Most recent HbA1c (February 2024) shows 8.1%, indicating suboptimal glycemic control.
+Cardiovascular examination unremarkable. No history of heart failure or cardiac dysfunction.
+Patient denies chest pain, shortness of breath, or lower extremity swelling. No CHF symptoms.
+Non-smoker for entire life. Discussing lifestyle modifications and possible medication adjustment.

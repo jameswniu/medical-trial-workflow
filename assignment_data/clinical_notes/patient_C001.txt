@@ -1,0 +1,10 @@
+Patient C001, Female, 53 years old, presents for routine follow-up. DOB 1970-05-15.
+Height 5'6", Weight 185 lbs. Confirmed Type 2 Diabetes diagnosis in March 2022.
+Patient has excellent medication compliance and uses a pill organizer.
+Family history includes mother with breast cancer and father with diabetes.
+Last mammography was September 2022. Never had colonoscopy due to anxiety.
+Drinks 2-3 glasses of wine per week. Never smoked tobacco. Lives with supportive spouse.
+Reports mild sleep problems, difficulty falling asleep several nights per week.
+No history of heart problems. Denies chest pain or shortness of breath.
+No signs of heart failure. Current medications include Metformin and Glipizide.
+Overall stable diabetes management.

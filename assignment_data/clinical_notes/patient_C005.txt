@@ -1,0 +1,5 @@
+Patient C005, Female, 45 years old. Here for general check-up. DOB 1978-11-10.
+No significant past medical history. Denies any diagnosis of diabetes or pre-diabetes.
+Recent HbA1c (April 2024) was 6.5%.
+Heart sounds are normal, no murmurs or gallops. No signs or symptoms of heart failure.
+No mention of CHF. Patient is a non-smoker. Generally healthy, focuses on preventive care.

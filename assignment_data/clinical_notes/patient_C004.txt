@@ -1,0 +1,6 @@
+Patient C004, Male, 75 years old. Follow-up for uncontrolled diabetes and cardiac concerns.
+Long-standing Type 2 Diabetes Mellitus, on insulin and multiple oral agents.
+Recent HbA1c (January 2024) was 9.1%.
+Patient has a well-documented history of Congestive Heart Failure, diagnosed 5 years ago.
+Echocardiogram consistently shows systolic dysfunction. Symptoms of dyspnea and fatigue are persistent.
+Patient is a former smoker, quit 20 years ago.

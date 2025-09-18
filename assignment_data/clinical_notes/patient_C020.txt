@@ -1,0 +1,6 @@
+Patient C020, Male, 67 years old. Complex medical management visit.
+Long-standing Non-insulin-dependent diabetes mellitus with multiple complications.
+Recent HbA1c (January 2024) severely elevated at 9.3%. Requires immediate intensification.
+Significant cardiac comorbidities including heart failure with reduced ejection fraction.
+Well-documented history of Congestive Heart Failure managed by cardiology.
+Former smoker, quit 12 years ago. Current focus on optimizing both cardiac and diabetes care.

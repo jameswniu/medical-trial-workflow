@@ -1,0 +1,18 @@
+Patient C010, Male, 64 years old. Follow-up for multiple medical conditions.
+Height: 5'8" (173 cm), Weight: 195 lbs (88 kg), BMI: 29.6 kg/m². Some college education, retired mechanic.
+Patient denies formal history of diabetes mellitus but acknowledges "borderline sugar" for years. Recent labs show concerning glucose levels.
+HbA1c (February 2024) was 7.3%. Previous values: Nov 2023: 7.1%, Aug 2023: 6.9% (upward trend over 6 months).
+Active smoker, 2 packs per day for 40+ years (80+ pack-years). Started smoking at age 20 in military service.
+Smoking cessation history: 6 failed quit attempts over past 15 years. Longest quit period was 3 months in 2018 using nicotine gum.
+Motivation to quit: 6/10 - wants to quit for health but feels "too old to change" and uses smoking to cope with stress.
+Occupational history: 35 years as automotive mechanic with exposure to solvents, asbestos brake pads, and exhaust fumes.
+Family history: Brother died of lung cancer at 62, father had emphysema. Mother had diabetes in later years.
+Social support: Widowed 2 years ago, lives alone. Adult children live out of state, limited local support system.
+Past medical history includes systolic dysfunction diagnosed 3 years ago (2021). EF currently 35%.
+Well-documented Congestive Heart Failure with reduced ejection fraction. Multiple hospitalizations for heart failure exacerbations.
+Recent spirometry (Jan 2024): FEV1 45% predicted, consistent with moderate-severe airflow limitation.
+Current medications: Metformin 500mg BID (recently started), Lisinopril 20mg daily, Carvedilol 25mg BID, Furosemide 40mg daily, 
+Spironolactone 25mg daily, Atorvastatin 80mg daily (6 medications, complexity score: 9).
+On optimal heart failure medications per cardiology. Recent hospitalization for heart failure 3 months ago.
+Strongly advised smoking cessation given cardiac condition. Referred to pulmonary rehabilitation and smoking cessation program.
+Recent life stressors: Wife's death 2 years ago, financial difficulties with medical bills. Creatinine 1.4 mg/dL (eGFR 48 mL/min/1.73m²).

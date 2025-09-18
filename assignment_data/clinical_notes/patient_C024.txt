@@ -1,0 +1,18 @@
+Patient C024, Male, 62 years old. Complex medical management visit.
+Height: 5'9" (175 cm), Weight: 210 lbs (95 kg), BMI: 31.0 kg/m². High school graduate, retired factory worker.
+Confirmed Type 2 Diabetes Mellitus since April 2018 (6+ years duration). Currently on Metformin 1000mg BID, Glipizide 10mg BID.
+Poor adherence to medications and lifestyle modifications - admits to missing doses "several times per week" and poor dietary compliance.
+Recent HbA1c (February 2024) shows 8.3%, well above target range. Previous values: Nov 2023: 8.1%, Aug 2023: 8.5%.
+Active smoker, 2 packs daily (40 cigarettes) for 40+ years (80+ pack-years). Started smoking at age 22 in military.
+Smoking cessation history: 5 failed quit attempts over past 20 years. Longest quit period was 2 months in 2015.
+Motivation to quit: 3/10 - acknowledges health risks but feels "set in ways" and uses smoking for stress relief.
+Occupational history: 35 years in automotive manufacturing with exposure to metal dust, solvents, and industrial chemicals.
+Family history: Father died of heart attack at 55 (heavy smoker), mother had diabetes. Brother has lung cancer currently.
+Social support: Married but spouse also smokes. Limited family support for cessation. Few non-smoking friends.
+Recent spirometry (Jan 2024): FEV1 58% predicted, consistent with moderate airflow limitation.
+No cardiac complications documented. Recent stress test (Dec 2023) negative for ischemia. EKG shows normal sinus rhythm.
+No history of Congestive Heart Failure or cardiac dysfunction. Echocardiogram (2023) shows EF 60%.
+Current medications: Metformin 1000mg BID, Glipizide 10mg BID, Lisinopril 15mg daily, Atorvastatin 40mg daily (4 medications, complexity score: 6).
+Recent life stressors: Retirement adjustment difficulties, financial concerns about healthcare costs.
+Intensive smoking cessation counseling provided. Referred to tobacco cessation program and pulmonary rehabilitation.
+Creatinine 1.2 mg/dL (eGFR 58 mL/min/1.73m²). No recent respiratory infections or exacerbations documented.

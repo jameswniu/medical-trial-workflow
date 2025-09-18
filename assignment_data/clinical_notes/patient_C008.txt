@@ -1,0 +1,6 @@
+Patient C008, Male, 55 years old. Diabetes management visit. DOB 1968-12-03.
+Long-standing Non-insulin-dependent diabetes mellitus since 2015. Poor glycemic control despite multiple interventions.
+Recent HbA1c (January 2024) elevated at 8.7%. Discussing insulin initiation.
+No cardiac history. Echocardiogram from last year shows normal ejection fraction.
+No signs or symptoms of Congestive Heart Failure. Cardiovascular exam benign.
+Patient quit smoking 10 years ago. Currently focusing on dietary counseling and exercise program.

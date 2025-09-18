@@ -1,0 +1,13 @@
+Patient C007, Female, 68 years old. Routine diabetes follow-up appointment.
+Height 5'4", Weight 160 lbs. Confirmed diabetes diagnosis in January 2020.
+Good medication adherence, uses weekly pill organizer.
+Current smoker, about 15 cigarettes daily for past 30 years.
+Started smoking at age 38. Has tried to quit 4 times in past 10 years, longest quit was 6 months.
+Highly motivated to quit smoking (8/10) due to heart failure diagnosis and family concerns.
+Family history includes sister with ovarian cancer and mother with colon cancer.
+Last mammography March 2023, last colonoscopy 2019.
+Drinks wine with dinner most nights. Lives independently.
+Sleep quality is good, 7-8 hours nightly.
+Has mild heart failure with preserved ejection fraction.
+No heart failure hospitalizations. Spirometry shows FEV1 72% predicted.
+Strongly counseled on smoking cessation.

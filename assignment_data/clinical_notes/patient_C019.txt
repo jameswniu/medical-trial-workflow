@@ -1,0 +1,6 @@
+Patient C019, Female, 51 years old. Annual wellness examination. DOB 1973-02-09.
+No history of diabetes mellitus. Recent labs show borderline glucose metabolism.
+HbA1c (March 2024) was 7.4%, suggesting possible pre-diabetes or early diabetes.
+Active smoker, 10-15 cigarettes daily for past 20 years. Multiple quit attempts unsuccessful.
+Cardiovascular examination unremarkable. No signs of heart failure or cardiac disease.
+No history of CHF. Strongly counseled on smoking cessation and diabetes risk reduction.

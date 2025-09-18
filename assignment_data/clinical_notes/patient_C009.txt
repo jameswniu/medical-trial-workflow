@@ -1,0 +1,6 @@
+Patient C009, Female, 49 years old. Annual physical examination. DOB 1974-06-18.
+Patient reports no significant medical history. Denies diabetes or pre-diabetic conditions.
+Recent HbA1c (April 2024) was 7.6%, which is concerning for possible diabetes development.
+Family history positive for Type 2 diabetes in both parents. Recommending glucose tolerance test.
+Cardiac examination normal. No murmurs, gallops, or signs of heart failure detected.
+Never smoked tobacco products. Discussing lifestyle modifications for diabetes prevention.

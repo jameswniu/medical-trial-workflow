@@ -1,0 +1,6 @@
+Patient C003, Female, 58 years old. Attending for annual physical.
+DOB 1965-09-01. Patient denies history of Type 2 Diabetes; fasting glucose levels have always been within normal limits.
+Recent HbA1c (February 2024) was 7.0%.
+Past medical history includes controlled hypertension and hyperlipidemia.
+No cardiac abnormalities found during examination; no evidence of CHF or other signs of heart failure.
+Patient is a lifelong non-smoker. Continues on daily statin.
