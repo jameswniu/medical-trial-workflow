@@ -6,10 +6,12 @@ Loads and synthesizes patient data into unified profiles.
 Sources:
 - patients.csv (demographics, DOB, gender, smoker status, height, weight, smoking data)
 - lab_results.csv (time-series lab values)
+- clinical_notes/ (unstructured patient notes)
 
 Features:
 - Precomputes derived fields (age, BMI, pack-years if available)
 - Attaches full lab history AND most recent lab values
+- Attaches clinical notes if available
 - Handles missing values safely
 
 Usage:
@@ -79,6 +81,7 @@ def load_patients(patients_csv: str) -> dict:
             "pack_years": calculate_pack_years(row.get("cigs_per_day"), row.get("years_smoked")),
             "labs": [],
             "latest_labs": {},  # filled by attach_labs_to_patients
+            "notes": ""  # will be populated by attach_notes_to_patients
         }
 
     return patients
@@ -118,11 +121,24 @@ def attach_labs_to_patients(patients: dict, labs_df: pd.DataFrame):
             patients[pid]["latest_labs"][test] = lab_entry
 
 
-def build_patient_profiles(patients_csv: str, labs_csv: str) -> dict:
+def attach_notes_to_patients(patients: dict, notes_dir: str):
+    """Attach clinical notes (if available) to patient profiles."""
+    for pid, profile in patients.items():
+        note_path = os.path.join(notes_dir, f"{pid}.txt")
+        if os.path.exists(note_path):
+            with open(note_path, "r", encoding="utf-8") as f:
+                profile["notes"] = f.read().strip()
+        else:
+            profile["notes"] = ""
+
+
+def build_patient_profiles(patients_csv: str, labs_csv: str,
+                           notes_dir="assignment_data/clinical_notes") -> dict:
     """Return unified patient profiles keyed by patient_id."""
     patients = load_patients(patients_csv)
     labs_df = load_lab_results(labs_csv)
     attach_labs_to_patients(patients, labs_df)
+    attach_notes_to_patients(patients, notes_dir)
     return patients
 
 
@@ -130,18 +146,9 @@ if __name__ == "__main__":
     BASE_DIR = os.path.dirname(os.path.dirname(__file__))
     patients_csv = os.path.join(BASE_DIR, "assignment_data", "patients.csv")
     labs_csv = os.path.join(BASE_DIR, "assignment_data", "lab_results.csv")
+    notes_dir = os.path.join(BASE_DIR, "assignment_data", "clinical_notes")
 
-    profiles = build_patient_profiles(patients_csv, labs_csv)
+    profiles = build_patient_profiles(patients_csv, labs_csv, notes_dir)
     print("Loaded profiles:", len(profiles))
     first = list(profiles.values())[0]
     print("Sample profile:", json.dumps(first, indent=2, default=str))
-
-    # Expected (values vary):
-    # Sample profile: {
-    #   'patient_id': 'patient_C001',
-    #   'age': 54,
-    #   'BMI': 26.1,
-    #   'pack_years': 12.5,
-    #   'labs': [...],
-    #   'latest_labs': {'HbA1c': {...}}
-    # }

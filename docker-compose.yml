@@ -1,0 +1,10 @@
+version: "3.9"
+
+services:
+  workflow:
+    build: .
+    container_name: medical-trial-workflow
+    volumes:
+      - ./assignment_data:/app/assignment_data
+      - ./output:/app/output
+    command: python src/orchestrator.py

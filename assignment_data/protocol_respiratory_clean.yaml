@@ -1,0 +1,99 @@
+protocol_id: RESP-005-Cessation
+study_name: Advanced Smoking Cessation & Respiratory Health Study
+structured_criteria:
+- description: Age between 40 and 75 years (inclusive).
+  type: age
+  condition: between
+  value:
+  - 40
+  - 75
+- description: Current smoker status confirmed.
+  type: demographic
+  field: is_smoker
+  condition: equals
+  value: true
+- description: Spirometry FEV1 between 50-80% predicted.
+  type: calculated_metric
+  metric: FEV1_percent
+  condition: between
+  value:
+  - 50
+  - 80
+unstructured_criteria:
+- description: "Current smoker with \xE2\u2030\xA510 pack-year smoking history."
+  type: smoking_quantification
+  condition: sufficient_history
+  minimum_pack_years: 10
+  concepts:
+  - current
+  - smoker
+  - with
+  - "\xE2\u2030\xA510"
+  - pack-year
+- description: At least 2 previous quit attempts in past 5 years.
+  type: behavioral_history
+  condition: multiple_attempts
+  minimum_count: 2
+  concepts:
+  - quit attempt
+  - cessation
+  - tried to quit
+- description: "High motivation to quit (\xE2\u2030\xA57/10)."
+  type: motivational_assessment
+  condition: high_motivation
+  threshold: 7
+  concepts:
+  - high
+  - motivation
+  - quit
+  - "(\xE2\u2030\xA57/10)."
+- description: Occupational or environmental smoke exposure history.
+  type: exposure_history
+  condition: documented_exposure
+  concepts:
+  - occupational exposure
+  - workplace smoke
+  - environmental
+- description: Adequate social support system for quit attempt.
+  type: social_assessment
+  condition: adequate_support
+  concepts:
+  - family support
+  - social support
+  - encouragement
+- description: No active respiratory infections in past 4 weeks.
+  type: acute_condition
+  condition: absence_recent
+  concepts:
+  - respiratory infection
+  - pneumonia
+  - bronchitis
+- description: No severe COPD or oxygen dependence.
+  type: disease_severity
+  condition: not_severe
+  concepts:
+  - severe COPD
+  - oxygen therapy
+  - home oxygen
+- description: No recent smoking cessation medications (30 days).
+  type: medication_washout
+  condition: clear_washout
+  concepts:
+  - varenicline
+  - Chantix
+  - bupropion
+  - nicotine replacement
+- description: Stable psychiatric conditions.
+  type: psychiatric_stability
+  condition: stable
+  concepts:
+  - depression
+  - anxiety
+  - substance abuse
+- description: No recent major life stressors.
+  type: psychosocial_assessment
+  condition: absence_recent_stress
+  concepts:
+  - major stress
+  - life changes
+  - crisis

@@ -1,104 +1,157 @@
-# Medical Trial Workflow – Patient Eligibility System
+# 🧪 Medical Trial Workflow
 
-## Project Description
-This project simulates an AI-powered system for automating **patient eligibility screening in clinical trials**. The system integrates structured data (patient records, lab results), unstructured data (clinical notes), and formalized trial protocols to generate ranked eligibility results.  
-
-The workflow demonstrates how agentic AI can reduce healthcare administrative overhead by making trial screening more efficient, auditable, and scalable.
-
-The workflow is designed to:
-1. **Ingest structured and unstructured data**  
-   - Patients and lab results (CSVs)  
-   - Clinical notes (TXT)  
-   - Clinical trial eligibility criteria (YAML protocols)  
-2. **Process and normalize data**  
-   - Regex/NLP parsing of notes (extensible to LLMs)  
-   - Structured data validation against protocols  
-3. **Evaluate eligibility**  
-   - Apply protocol rules to patient data  
-   - Generate confidence scores with reasoning  
-4. **Generate ranked outputs**  
-   - JSON files per protocol  
-   - Patients sorted by descending eligibility confidence  
+This project evaluates patient eligibility against clinical trial protocols using structured (CSV) and unstructured (clinical notes) data. Protocols are defined in YAML, parsed into criteria, and patients are scored against them. Results are printed in the console and written to JSON files.
 
 ---
 
-## Architecture
+## 1. Architecture Overview
 
-### Module Responsibilities
-- **data_loader.py**: Loads patients, labs, and notes  
-- **protocol_parser.py**: Parses YAML trial protocols  
-- **eligibility_engine.py**: Applies structured/unstructured criteria  
-- **main.py**: Orchestrates workflow and writes results  
+### System Design
+- **Data Loader (`data_loader.py`)**
+  Loads patient demographics, labs, and notes from CSV/TXT files into unified profiles.
 
-### Flow Diagram
+- **Protocol Sorter (`protocol_sorter.py`)**
+  Normalizes YAML protocol files into structured and unstructured criteria.
+
+- **Evaluator (`protocol_evaluator.py`, `note_parser.py`)**
+  Evaluates each patient against all criteria:
+  - Structured: direct numeric and equality comparisons.
+  - Unstructured: semantic search on notes with sentence-transformers.
+  Produces evidence, confidence score, and eligibility decision.
+
+- **Orchestrator (`orchestrator.py`)**
+  Coordinates the workflow:
+  - Runs evaluation for all patients and all protocols.
+  - Sorts patients: True first, then MAYBE, then False.
+  - Prints per-patient scores and summaries.
+  - Writes JSON outputs to `/output`.
+
+### Data Flow Diagram (Mermaid)
+
 ```mermaid
 flowchart TD
-    A[Patients.csv] --> D[Data Loader]
-    B[Lab Results.csv] --> D
-    C[Clinical Notes (txt)] --> D
-    P[Protocols (YAML)] --> D
-
-    D --> E[Note Parser]
-    E --> F[Eligibility Engine]
-
-    F --> G[Eligibility Scores + Reasons]
-    G --> H[Orchestrator]
-
-    H --> I[JSON Output Files]
-    I --> |protocol_cardiometabolic_results.json|
-    I --> |protocol_oncology_results.json|
+    A[patients.csv, labs.csv, notes] --> B[data_loader.py]
+    B --> C[Patient Profiles]
+    D[protocol YAMLs] --> E[protocol_sorter.py]
+    E --> F[Normalized Protocols]
+    C --> G[protocol_evaluator.py + note_parser.py]
+    F --> G
+    G --> H[Eligibility Results + Confidence Scores]
+    H --> I[orchestrator.py]
+    I --> J[Console Output + JSON in /output]
 ```
 
 ---
 
-## Design Choices & Trade-offs
-- **YAML for Protocols**  
-  Human-readable and version-controlled; easier to audit and extend than hard-coded rules.  
-- **JSON Outputs**  
-  Portable, auditable, and downstream-friendly; verbose but regulatory-compliant.  
-- **Regex/Keyword Parsing for Notes**  
-  Lightweight, explainable, and fast; extensible to LLMs for deeper semantic extraction.  
-- **Rule-Based Eligibility Engine**  
-  Deterministic, transparent, and auditable; less adaptable than probabilistic ML, but fits compliance needs.  
-- **Containerized Deployment**  
-  Docker ensures reproducibility and smooth deployment across environments.  
+## 2. Design Choices & Trade-offs
+
+- **Sentence-Transformers MiniLM**: Chosen for fast, lightweight semantic similarity. Trade-off: less accurate than larger models.  
+- **Confidence scoring**: PASS=1, MAYBE=0.5, FAIL=0. Any FAIL automatically disqualifies a patient. Chosen for interpretability.  
+- **Python 3.9**: Ensures compatibility with most ML/NLP libraries.  
+- **Dockerization**: Provides reproducibility; trade-off is initial image size.  
 
 ---
 
-## Scalability
-The pipeline can scale to **1M+ patients** with:
-- Batch/stream ingestion for CSVs and notes.  
-- Distributed computation (Dask, Spark, Ray).  
-- Vector databases + LLMs for semantic note processing.  
-- Containerized deployment on Docker/Kubernetes.  
+## 3. Scalability Considerations
+
+For **1 million patients**:
+- **Storage**: Use Parquet/Arrow files on cloud storage instead of CSVs.  
+- **Vector search**: Replace in-memory similarity with FAISS/Milvus or Pinecone.  
+- **Distributed processing**: Use Spark or Ray to parallelize across patient profiles.  
+- **Caching embeddings**: Pre-compute and store note embeddings to avoid recomputation.  
 
 ---
 
-## Setup
+## 4. Setup & Run Instructions
 
-Install dependencies:
+### Option A: Local Python (3.9)
+
+1. Create virtual environment:
+   ```bash
+   python3.9 -m venv venv
+   source venv/bin/activate   # Windows: venv\Scripts\activate
+   ```
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Run orchestrator:
+   ```bash
+   python src/orchestrator.py
+   ```
+
+---
+
+### Option B: Docker
+
+1. Build image:
+   ```bash
+   docker build -t medical-trial-workflow .
+   ```
+2. Run with mounted input/output:
+   ```bash
+   docker run --rm \\
+     -v $(pwd)/assignment_data:/app/assignment_data \\
+     -v $(pwd)/output:/app/output \\
+     medical-trial-workflow
+   ```
+
+---
+
+### Option C: Docker Compose
+
 ```bash
-pip install -r requirements.txt
-```
-
-Run the workflow:
-```bash
-python main.py
+docker compose up --build
+docker compose down
 ```
 
 ---
 
-## Docker
+## 5. Output
 
-Build and run:
-```bash
-docker build -t medical-trial-workflow .
-docker run -it --rm medical-trial-workflow
+### Console Example
+
+```
+=== Protocol: ONC-003-Prevention ===
+Patient patient_C004 | confidence_score = 0.611 | is_eligible = True
+Patient patient_C003 | confidence_score = 0.462 | is_eligible = MAYBE
+Patient patient_C001 | confidence_score = NA | is_eligible = False
+Patient patient_C002 | confidence_score = NA | is_eligible = False
+Protocol summary: 1/4 patients eligible (25.0%)
+```
+
+### JSON Example (`output/ONC-003-Prevention_results.json`)
+
+```json
+[
+  {
+    "patient_id": "patient_C004",
+    "is_eligible": true,
+    "confidence_score": 0.611,
+    "evidence": {
+      "Age between 50 and 70": "PASS (age=54 in range 50-70)",
+      "HbA1c < 8.0%": "MAYBE (no data for lab_result)",
+      "No immunosuppressive therapy": "MAYBE (weak semantic match ...)"
+    }
+  },
+  {
+    "patient_id": "patient_C001",
+    "is_eligible": false,
+    "confidence_score": "NA",
+    "evidence": {
+      "Age between 50 and 70": "FAIL (age=75 not in range 50-70)",
+      "...": "..."
+    }
+  }
+]
 ```
 
 ---
 
-## Output
-Results are written to the `output/` directory. Each protocol produces one JSON file, where patients are sorted by eligibility confidence (highest first). Example outputs:  
-- `output/protocol_oncology_prevention_results.json`  
-- `output/protocol_respiratory_results.json`
+## 6. Expected Output Structure
+
+- A list of patients, each containing:
+  - `patient_id`: string  
+  - `is_eligible`: boolean or `"MAYBE"`  
+  - `confidence_score`: float (0–1) or `"NA"` if disqualified  
+  - `evidence`: dictionary mapping each criterion → PASS/FAIL/MAYBE explanation  

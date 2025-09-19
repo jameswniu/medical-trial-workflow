@@ -1,0 +1,70 @@
+protocol_id: ONC-003-Prevention
+study_name: Metabolic Factors in Cancer Prevention Study
+structured_criteria:
+- description: Patient must be between 50 and 70 years of age (inclusive).
+  type: age
+  condition: between
+  value:
+  - 50
+  - 70
+- description: Patient must not be a current smoker.
+  type: demographic
+  field: is_smoker
+  condition: equals
+  value: false
+- description: HbA1c level must be less than 8.0%.
+  type: lab_result
+  test_name: HbA1c
+  condition: lt
+  value: 8.0
+  temporal_constraint: most_recent
+unstructured_criteria:
+- description: Must be non-smoker for at least 5 years.
+  type: smoking_history
+  condition: quit_duration
+  minimum_duration: 5_years
+  concepts:
+  - must
+  - non-smoker
+  - least
+  - years.
+- description: Family history of cancer in first-degree relatives.
+  type: family_history
+  condition: presence
+  concepts:
+  - cancer
+  - malignancy
+  - tumor
+- description: Must have completed age-appropriate cancer screening.
+  type: screening_compliance
+  condition: up_to_date
+  concepts:
+  - must
+  - have
+  - completed
+  - age-appropriate
+  - cancer
+- description: No personal history of malignancy.
+  type: medical_history
+  condition: absence
+  concepts:
+  - cancer
+  - malignancy
+  - tumor
+- description: No current immunosuppressive therapy.
+  type: medication_status
+  condition: not_current
+  concepts:
+  - immunosuppressant
+  - steroid
+  - prednisone
+- description: Moderate alcohol consumption within guidelines.
+  type: lifestyle_assessment
+  behavior: alcohol_consumption
+  condition: within_limits
+  concepts:
+  - moderate
+  - alcohol
+  - consumption
+  - within
+  - guidelines.

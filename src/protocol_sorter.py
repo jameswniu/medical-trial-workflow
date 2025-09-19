@@ -61,7 +61,6 @@ def fix_and_load_yaml(path: str):
 
 
 def normalize_protocol(raw: dict, proto_id: str) -> dict:
-    """Normalize a single protocol dict into structured/unstructured buckets."""
     clean = {
         "protocol_id": raw.get("protocol_id", proto_id),
         "study_name": raw.get("study_name", "Unnamed Study"),
@@ -74,6 +73,11 @@ def normalize_protocol(raw: dict, proto_id: str) -> dict:
             for crit in value:
                 if isinstance(crit, dict):
                     bucket = classify_criterion(crit)
+                    # 🔑 Fallback concepts if not defined
+                    if bucket == "unstructured" and "concepts" not in crit:
+                        desc = crit.get("description", "")
+                        words = [w.lower() for w in desc.split() if len(w) > 3]
+                        crit["concepts"] = words[:5]
                     clean[f"{bucket}_criteria"].append(crit)
 
     return clean
