@@ -5,6 +5,7 @@ Normalizes protocol YAMLs in assignment_data/.
 - Wraps top-level lists under 'criteria:' if needed (to fix invalid YAML).
 - Splits criteria into structured_criteria and unstructured_criteria.
 - Logs unknown types so new protocol designs can be reviewed.
+- Provides sort_protocols() for orchestrator integration.
 
 Usage:
     python protocol_sorter.py
@@ -13,7 +14,7 @@ Usage:
 import os
 import yaml
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSIGNMENT_DIR = os.path.join(BASE_DIR, "assignment_data")
 
 # Track unknown criterion types we encounter
@@ -59,11 +60,10 @@ def fix_and_load_yaml(path: str):
     return yaml.safe_load(fixed)
 
 
-def normalize_protocol(in_path: str, out_path: str):
-    raw = fix_and_load_yaml(in_path) or {}
-
+def normalize_protocol(raw: dict, proto_id: str) -> dict:
+    """Normalize a single protocol dict into structured/unstructured buckets."""
     clean = {
-        "protocol_id": raw.get("protocol_id", "UNKNOWN"),
+        "protocol_id": raw.get("protocol_id", proto_id),
         "study_name": raw.get("study_name", "Unnamed Study"),
         "structured_criteria": [],
         "unstructured_criteria": [],
@@ -76,6 +76,15 @@ def normalize_protocol(in_path: str, out_path: str):
                     bucket = classify_criterion(crit)
                     clean[f"{bucket}_criteria"].append(crit)
 
+    return clean
+
+
+def normalize_file(in_path: str, out_path: str):
+    """Normalize a single YAML file and save it."""
+    raw = fix_and_load_yaml(in_path) or {}
+    proto_id = os.path.splitext(os.path.basename(in_path))[0]
+    clean = normalize_protocol(raw, proto_id)
+
     with open(out_path, "w") as f:
         yaml.dump(clean, f, sort_keys=False)
 
@@ -84,20 +93,29 @@ def normalize_protocol(in_path: str, out_path: str):
         f"(structured={len(clean['structured_criteria'])}, "
         f"unstructured={len(clean['unstructured_criteria'])})"
     )
+    return clean
 
 
-def process_all_protocols():
-    for fname in os.listdir(ASSIGNMENT_DIR):
+def sort_protocols(in_dir: str = ASSIGNMENT_DIR) -> list:
+    """
+    Normalize all protocol YAMLs in in_dir.
+    Returns a list of cleaned protocol dicts for orchestrator.
+    """
+    normalized = []
+    for fname in os.listdir(in_dir):
         if fname.startswith("protocol_") and fname.endswith(".yaml") and not fname.endswith("_clean.yaml"):
-            in_path = os.path.join(ASSIGNMENT_DIR, fname)
-            out_path = os.path.join(ASSIGNMENT_DIR, fname.replace(".yaml", "_clean.yaml"))
-            normalize_protocol(in_path, out_path)
+            in_path = os.path.join(in_dir, fname)
+            out_path = os.path.join(in_dir, fname.replace(".yaml", "_clean.yaml"))
+            clean = normalize_file(in_path, out_path)
+            normalized.append(clean)
 
     if UNKNOWN_TYPES:
         print("\n[!] Unknown types encountered (defaulted to unstructured):")
         for t in UNKNOWN_TYPES:
             print("   -", t)
 
+    return normalized
+
 
 if __name__ == "__main__":
-    process_all_protocols()
+    sort_protocols()
