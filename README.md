@@ -1,38 +1,33 @@
-# 🧪 Medical Trial Workflow
+# Clinical Trial Eligibility System
 
-This project evaluates patient eligibility against clinical trial protocols using structured (CSV) and unstructured (clinical notes) data. Protocols are defined in YAML, parsed into criteria, and patients are scored against them. Results are printed in the console and written to JSON files.
+This system evaluates patient eligibility against clinical trial protocols using structured data (demographics, labs) and unstructured data (clinical notes). Protocols are defined in YAML, normalized into criteria, and patients are evaluated against them. Results are printed in the console and written to JSON.
 
 ---
 
 ## 1. Architecture Overview
 
-### System Design
-- **Data Loader (`data_loader.py`)**
-  Loads patient demographics, labs, and notes from CSV/TXT files into unified profiles.
+### Components
+- **Data Loader (`data_loader.py`)**  
+  Loads patient demographics, labs, and notes into unified profiles.
 
-- **Protocol Sorter (`protocol_sorter.py`)**
-  Normalizes YAML protocol files into structured and unstructured criteria.
+- **Protocol Sorter (`protocol_sorter.py`)**  
+  Normalizes protocol YAML files into structured and unstructured criteria.
 
-- **Evaluator (`protocol_evaluator.py`, `note_parser.py`)**
-  Evaluates each patient against all criteria:
-  - Structured: direct numeric and equality comparisons.
-  - Unstructured: semantic search on notes with sentence-transformers.
-  Produces evidence, confidence score, and eligibility decision.
+- **Evaluator (`protocol_evaluator.py`, `note_parser.py`)**  
+  - Structured: compares numeric and categorical values (age, smoker status, labs).  
+  - Unstructured: checks clinical notes using semantic similarity (MiniLM sentence-transformers).  
+  Produces criterion-level evidence and confidence scores.
 
-- **Orchestrator (`orchestrator.py`)**
-  Coordinates the workflow:
-  - Runs evaluation for all patients and all protocols.
-  - Sorts patients: True first, then MAYBE, then False.
-  - Prints per-patient scores and summaries.
-  - Writes JSON outputs to `/output`.
+- **Orchestrator (`orchestrator.py`)**  
+  Runs the workflow, sorts patients by eligibility, prints summaries, and writes JSON results.
 
-### Data Flow Diagram (Mermaid)
+### Data Flow (Mermaid)
 
 ```mermaid
 flowchart TD
-    A[patients.csv, labs.csv, notes] --> B[data_loader.py]
+    A[patients.csv, lab_results.csv, clinical_notes] --> B[data_loader.py]
     B --> C[Patient Profiles]
-    D[protocol YAMLs] --> E[protocol_sorter.py]
+    D[Protocol YAMLs] --> E[protocol_sorter.py]
     E --> F[Normalized Protocols]
     C --> G[protocol_evaluator.py + note_parser.py]
     F --> G
@@ -43,62 +38,48 @@ flowchart TD
 
 ---
 
-## 2. Design Choices & Trade-offs
+## 2. Design Choices and Trade-offs
 
-- **Sentence-Transformers MiniLM**: Chosen for fast, lightweight semantic similarity. Trade-off: less accurate than larger models.  
-- **Confidence scoring**: PASS=1, MAYBE=0.5, FAIL=0. Any FAIL automatically disqualifies a patient. Chosen for interpretability.  
-- **Python 3.9**: Ensures compatibility with most ML/NLP libraries.  
-- **Dockerization**: Provides reproducibility; trade-off is initial image size.  
+- **Semantic model**: MiniLM chosen for balance of speed and accuracy. Larger models could improve precision but would be slower and harder to deploy.  
+- **Eligibility rule**: Any `FAIL` disqualifies a patient. Confidence scores are used only if no FAILs exist.  
+- **Confidence scoring**: PASS = 1, MAYBE = 0.5, FAIL = 0. Simple and interpretable.  
+- **Sorting**: Patients are grouped by eligibility (`True`, `"MAYBE"`, `False`) and then sorted by confidence score (descending).  
+- **Dockerization**: Provides reproducibility across environments. Trade-off is added build/setup time.  
 
 ---
 
 ## 3. Scalability Considerations
 
-For **1 million patients**:
-- **Storage**: Use Parquet/Arrow files on cloud storage instead of CSVs.  
-- **Vector search**: Replace in-memory similarity with FAISS/Milvus or Pinecone.  
-- **Distributed processing**: Use Spark or Ray to parallelize across patient profiles.  
-- **Caching embeddings**: Pre-compute and store note embeddings to avoid recomputation.  
+For scaling to millions of patients:
+- Use Parquet or Arrow instead of CSV for storage.  
+- Use FAISS, Milvus, or another vector database for efficient similarity search.  
+- Parallelize patient evaluation with Spark, Ray, or Dask.  
+- Cache precomputed embeddings for clinical notes.  
 
 ---
 
-## 4. Setup & Run Instructions
+## 4. Setup and Run Instructions
 
-### Option A: Local Python (3.9)
+### Local (Python 3.9)
 
-1. Create virtual environment:
-   ```bash
-   python3.9 -m venv venv
-   source venv/bin/activate   # Windows: venv\Scripts\activate
-   ```
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Run orchestrator:
-   ```bash
-   python src/orchestrator.py
-   ```
+```bash
+python3.9 -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python src/orchestrator.py
+```
 
----
+### Docker
 
-### Option B: Docker
+```bash
+docker build -t clinical-trial-system .
+docker run --rm \\
+  -v $(pwd)/assignment_data:/app/assignment_data \\
+  -v $(pwd)/output:/app/output \\
+  clinical-trial-system
+```
 
-1. Build image:
-   ```bash
-   docker build -t medical-trial-workflow .
-   ```
-2. Run with mounted input/output:
-   ```bash
-   docker run --rm \\
-     -v $(pwd)/assignment_data:/app/assignment_data \\
-     -v $(pwd)/output:/app/output \\
-     medical-trial-workflow
-   ```
-
----
-
-### Option C: Docker Compose
+### Docker Compose
 
 ```bash
 docker compose up --build
@@ -107,40 +88,89 @@ docker compose down
 
 ---
 
-## 5. Output
+## 5. Example Output
 
-### Console Example
+### Console
 
 ```
 === Protocol: ONC-003-Prevention ===
-Patient patient_C004 | confidence_score = 0.611 | is_eligible = True
-Patient patient_C003 | confidence_score = 0.462 | is_eligible = MAYBE
-Patient patient_C001 | confidence_score = NA | is_eligible = False
+Patient patient_C001 | confidence_score = 0.944 | is_eligible = True
+Patient patient_C003 | confidence_score = 0.833 | is_eligible = True
+Patient patient_C006 | confidence_score = 0.462 | is_eligible = MAYBE
 Patient patient_C002 | confidence_score = NA | is_eligible = False
-Protocol summary: 1/4 patients eligible (25.0%)
+Protocol summary: 2/4 patients eligible (50.0%)
 ```
 
-### JSON Example (`output/ONC-003-Prevention_results.json`)
+---
+
+### JSON (`output/ONC-003-Prevention_results.json`)
+
+Representative 4 patients, each with 9 criteria in evidence:
 
 ```json
 [
   {
-    "patient_id": "patient_C004",
+    "patient_id": "patient_C001",
     "is_eligible": true,
-    "confidence_score": 0.611,
+    "confidence_score": 0.944,
     "evidence": {
-      "Age between 50 and 70": "PASS (age=54 in range 50-70)",
-      "HbA1c < 8.0%": "MAYBE (no data for lab_result)",
-      "No immunosuppressive therapy": "MAYBE (weak semantic match ...)"
+      "Patient must be between 50 and 70 years of age (inclusive).": "PASS (age=54 in range 50-70)",
+      "Patient must not be a current smoker.": "PASS (is_smoker exactly False)",
+      "HbA1c level must be less than 8.0%.": "MAYBE (no data for lab_result)",
+      "Must be non-smoker for at least 5 years.": "PASS (semantic match, score=0.22)",
+      "Family history of cancer in first-degree relatives.": "PASS (semantic match, score=0.29)",
+      "Must have completed age-appropriate cancer screening.": "PASS (semantic match, score=0.42)",
+      "No personal history of malignancy.": "PASS (semantic match, score=0.25)",
+      "No current immunosuppressive therapy.": "PASS (semantic match, score=0.16)",
+      "Moderate alcohol consumption within guidelines.": "PASS (semantic match, score=0.31)"
     }
   },
   {
-    "patient_id": "patient_C001",
+    "patient_id": "patient_C003",
+    "is_eligible": true,
+    "confidence_score": 0.833,
+    "evidence": {
+      "Patient must be between 50 and 70 years of age (inclusive).": "PASS (age=58 in range 50-70)",
+      "Patient must not be a current smoker.": "PASS (is_smoker exactly False)",
+      "HbA1c level must be less than 8.0%.": "PASS (HbA1c=7.5, < 8.0)",
+      "Must be non-smoker for at least 5 years.": "PASS (semantic match, score=0.20)",
+      "Family history of cancer in first-degree relatives.": "MAYBE (weak semantic match, score=0.14)",
+      "Must have completed age-appropriate cancer screening.": "PASS (semantic match, score=0.27)",
+      "No personal history of malignancy.": "PASS (semantic match, score=0.20)",
+      "No current immunosuppressive therapy.": "PASS (semantic match, score=0.16)",
+      "Moderate alcohol consumption within guidelines.": "PASS (semantic match, score=0.19)"
+    }
+  },
+  {
+    "patient_id": "patient_C006",
+    "is_eligible": "MAYBE",
+    "confidence_score": 0.462,
+    "evidence": {
+      "Patient must be between 50 and 70 years of age (inclusive).": "PASS (age=62 in range 50-70)",
+      "Patient must not be a current smoker.": "PASS (is_smoker exactly False)",
+      "HbA1c level must be less than 8.0%.": "MAYBE (no data for lab_result)",
+      "Must be non-smoker for at least 5 years.": "MAYBE (weak semantic match, score=0.12)",
+      "Family history of cancer in first-degree relatives.": "MAYBE (weak semantic match, score=0.14)",
+      "Must have completed age-appropriate cancer screening.": "PASS (semantic match, score=0.29)",
+      "No personal history of malignancy.": "PASS (semantic match, score=0.21)",
+      "No current immunosuppressive therapy.": "PASS (semantic match, score=0.21)",
+      "Moderate alcohol consumption within guidelines.": "PASS (semantic match, score=0.25)"
+    }
+  },
+  {
+    "patient_id": "patient_C002",
     "is_eligible": false,
     "confidence_score": "NA",
     "evidence": {
-      "Age between 50 and 70": "FAIL (age=75 not in range 50-70)",
-      "...": "..."
+      "Patient must be between 50 and 70 years of age (inclusive).": "FAIL (age=36 not in range 50-70)",
+      "Patient must not be a current smoker.": "FAIL (is_smoker=True not equal False)",
+      "HbA1c level must be less than 8.0%.": "MAYBE (no data for lab_result)",
+      "Must be non-smoker for at least 5 years.": "PASS (semantic match, score=0.51)",
+      "Family history of cancer in first-degree relatives.": "PASS (semantic match, score=0.16)",
+      "Must have completed age-appropriate cancer screening.": "PASS (semantic match, score=0.31)",
+      "No personal history of malignancy.": "MAYBE (weak semantic match, score=0.14)",
+      "No current immunosuppressive therapy.": "PASS (semantic match, score=0.20)",
+      "Moderate alcohol consumption within guidelines.": "PASS (semantic match, score=0.29)"
     }
   }
 ]
@@ -150,8 +180,9 @@ Protocol summary: 1/4 patients eligible (25.0%)
 
 ## 6. Expected Output Structure
 
-- A list of patients, each containing:
-  - `patient_id`: string  
-  - `is_eligible`: boolean or `"MAYBE"`  
-  - `confidence_score`: float (0–1) or `"NA"` if disqualified  
-  - `evidence`: dictionary mapping each criterion → PASS/FAIL/MAYBE explanation  
+Each protocol JSON result file is an array of patients. Each patient object contains:
+
+- `patient_id`: string  
+- `is_eligible`: boolean or `"MAYBE"`  
+- `confidence_score`: decimal (0 - 1) or `"NA"` if disqualified  
+- `evidence`: dictionary with exactly number of criteria descriptions, each mapped to a PASS/FAIL/MAYBE explanation  
