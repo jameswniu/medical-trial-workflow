@@ -1,169 +1,78 @@
 """
 orchestrator.py
 
-Runs the full workflow:
-- Loads enriched patient profiles (demographics + labs).
-- Indexes clinical notes into the vector DB.
-- Loads all cleaned YAML protocols.
-- Evaluates patients against each protocol.
-- Computes confidence scores (PASS=1.0, FAIL=0.0, MAYBE=0.5).
-- Ensures evidence covers all criteria.
-- Saves results as JSON in /output.
+Coordinates the medical trial workflow:
+- Loads patient profiles (demographics + labs).
+- Normalizes trial protocols (structured/unstructured).
+- Evaluates patients against protocols.
+- Writes explainable JSON outputs.
+
+Usage:
+    python orchestrator.py
 """
 
 import os
-import json
-import yaml
 from data_loader import build_patient_profiles
-from note_parser import index_clinical_notes
+from protocol_sorter import sort_protocols
 from protocol_evaluator import evaluate_patient
-
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-ASSIGNMENT_DIR = os.path.join(BASE_DIR, "assignment_data")
-OUTPUT_DIR = os.path.join(BASE_DIR, "output")
-NOTES_DIR = os.path.join(ASSIGNMENT_DIR, "clinical_notes")
+from utils import write_json
 
 
-def compute_confidence(evidence: dict) -> float:
+def run_workflow(patients_csv: str, labs_csv: str, protocols_dir: str, outputs_dir="outputs"):
     """
-    Compute confidence score from evidence.
-    - PASS = 1.0
-    - FAIL = 0.0
-    - MAYBE = 0.5
-    - Unstructured with similarity: use sim value for PASS, (1-sim) for FAIL, 0.5 for MAYBE
+    Full workflow runner.
+    - patients_csv: path to patients.csv
+    - labs_csv: path to lab_results.csv
+    - protocols_dir: path to YAML protocols directory
+    - outputs_dir: where JSON results are saved
     """
-    scores = []
-    for v in evidence.values():
-        if v.startswith("PASS") and "sim=" not in v:
-            scores.append(1.0)
-        elif v.startswith("FAIL") and "sim=" not in v:
-            scores.append(0.0)
-        elif v.startswith("MAYBE"):
-            scores.append(0.5)
-        elif "sim=" in v:
-            try:
-                sim_val = float(v.split("sim=")[-1].strip(")"))
-                if v.startswith("PASS"):
-                    scores.append(sim_val)
-                elif v.startswith("FAIL"):
-                    scores.append(1 - sim_val)
-                elif v.startswith("MAYBE"):
-                    scores.append(0.5)
-            except Exception:
-                scores.append(0.5)
-        else:
-            scores.append(0.5)
-    return round(sum(scores) / len(scores), 3) if scores else 0.0
+    # 1. Load patient profiles
+    patients = build_patient_profiles(patients_csv, labs_csv)
+    print(f"Loaded {len(patients)} patient profiles")
 
+    # 2. Normalize and load protocols
+    protocols = sort_protocols(protocols_dir)
+    print(f"Loaded {len(protocols)} normalized protocols")
 
-def main():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-    patients_csv = os.path.join(ASSIGNMENT_DIR, "patients.csv")
-    labs_csv = os.path.join(ASSIGNMENT_DIR, "lab_results.csv")
-    profiles = build_patient_profiles(patients_csv, labs_csv)
-
-    print(f"Indexing clinical notes from: {NOTES_DIR}")
-    index_clinical_notes(NOTES_DIR)
-
-    protocol_files = [
-        os.path.join(ASSIGNMENT_DIR, f)
-        for f in os.listdir(ASSIGNMENT_DIR)
-        if f.startswith("protocol_") and f.endswith("_clean.yaml")
-    ]
-
-    summary = {}
-
-    for proto_file in protocol_files:
-        with open(proto_file, "r", encoding="utf-8") as f:
-            protocol = yaml.safe_load(f)
-
-        protocol_id = protocol.get("protocol_id", "UNKNOWN")
-        study_name = protocol.get("study_name", "Unnamed Study")
-
-        structured = protocol.get("structured_criteria", [])
-        unstructured = protocol.get("unstructured_criteria", [])
-        criteria_descriptions = [c.get("description", "") for c in structured + unstructured]
-        total_criteria = len(criteria_descriptions)
-
+    # 3. Evaluate each patient against each protocol
+    for protocol in protocols:
         results = []
-        eligible_count = 0
-
-        for pid, patient in profiles.items():
-            ok, evidence = evaluate_patient(patient, protocol)
-
-            # Fill missing criteria with "Not evaluated"
-            for crit in criteria_descriptions:
-                if crit not in evidence:
-                    evidence[crit] = "Not evaluated"
-
-            confidence = compute_confidence(evidence)
-            results.append({
-                "patient_id": pid,
-                "is_eligible": ok,
-                "confidence_score": confidence,
-                "evidence": evidence,
+        for patient in patients.values():
+            result = evaluate_patient(patient, {
+                "id": protocol["protocol_id"],
+                "structured": protocol.get("structured_criteria", []),
+                "unstructured": protocol.get("unstructured_criteria", []),
             })
-            if ok:
-                eligible_count += 1
+            results.append(result)
 
-        out_path = os.path.join(OUTPUT_DIR, f"{protocol_id}_results.json")
-        with open(out_path, "w", encoding="utf-8") as f:
-            json.dump({
-                "protocol_id": protocol_id,
-                "study_name": study_name,
-                "criteria_count": total_criteria,
-                "criteria_descriptions": criteria_descriptions,
-                "patients": results,
-            }, f, indent=2)
-
-        print(f"Finished {protocol_id} ({study_name}) -> {out_path}")
-        summary[protocol_id] = {
-            "patients": len(results),
-            "criteria": total_criteria,
-            "eligible": eligible_count,
-        }
-
-    print("\nProtocol Summary:")
-    for proto_id, info in summary.items():
-        pct = round((info['eligible'] / info['patients']) * 100, 1) if info['patients'] else 0
-        print(f"- {proto_id}: {info['patients']} patients, {info['criteria']} criteria each, "
-              f"{info['eligible']} eligible ({pct}%)")
+        # 4. Write per-protocol JSON file
+        out_path = write_json(protocol["protocol_id"], results, out_dir=outputs_dir)
+        print(f"Saved results for {protocol['protocol_id']} -> {out_path}")
 
 
 if __name__ == "__main__":
-    main()
-    # === Expected Output (example, will vary with patient data) ===
-    #
-    # Console prints something like:
-    #   Indexing clinical notes from: /path/to/assignment_data/clinical_notes
-    #   Finished ONC-003-Prevention (Metabolic Factors in Cancer Prevention Study) -> output/ONC-003-Prevention_results.json
-    #   Finished RESP-005-Cessation (Advanced Smoking Cessation & Respiratory Health Study) -> output/RESP-005-Cessation_results.json
-    #
-    # Two JSON files appear in /output/, each with:
-    # {
-    #   "protocol_id": "ONC-003-Prevention",
-    #   "study_name": "Metabolic Factors in Cancer Prevention Study",
-    #   "criteria_count": 9,
-    #   "criteria_descriptions": [...],
-    #   "patients": [
-    #       {
-    #           "patient_id": "patient_C001",
-    #           "is_eligible": true,
-    #           "confidence_score": 0.77,
-    #           "evidence": {
-    #               "Age between 50 and 70 years (inclusive).": "PASS (Age 54 in range 50-70)",
-    #               "HbA1c level must be less than 8.0%.": "PASS (HbA1c=7.9, lt 8.0)",
-    #               "No personal history of malignancy.": "PASS (no strong match, sim=0.30)",
-    #               "...": "..."
-    #           }
-    #       },
-    #       ...
-    #   ]
-    # }
-    #
-    # Final summary in console:
-    # Protocol Summary:
-    # - ONC-003-Prevention: 25 patients, 9 criteria each, 14 eligible (56.0%)
-    # - RESP-005-Cessation: 25 patients, 12 criteria each, 18 eligible (72.0%)
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    patients_csv = os.path.join(BASE_DIR, "assignment_data", "patients.csv")
+    labs_csv = os.path.join(BASE_DIR, "assignment_data", "lab_results.csv")
+    protocols_dir = os.path.join(BASE_DIR, "assignment_data")
 
+    run_workflow(patients_csv, labs_csv, protocols_dir)
+
+    # Expected console output:
+    # Loaded 50 patient profiles
+    # Loaded 3 normalized protocols
+    # Saved results for protocol_001 -> outputs/protocol_001.json
+    #
+    # Example JSON (inside outputs/protocol_001.json):
+    # {
+    #   "patient_id": "xyz-789",
+    #   "is_eligible": false,
+    #   "confidence_score": 0.95,
+    #   "evidence": {
+    #     "age": "PASS (age 56 is between 40 and 70)",
+    #     "HbA1c": "PASS (HbA1c 8.1 >= 7.5)",
+    #     "is_smoker": "PASS (is_smoker exactly False)",
+    #     "diabetes": "MAYBE (notes mention 'borderline sugar', possible diabetes)",
+    #     "CHF": "MAYBE (notes mention 'EF 35%', possible CHF)"
+    #   }
+    # }
